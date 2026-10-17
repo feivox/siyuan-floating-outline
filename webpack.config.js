@@ -38,7 +38,6 @@ module.exports = (env, argv) => {
                     {from: "plugin.json", to: "./dist/"},
                     {from: "boot-appearances/", to: "./dist/boot-appearances/", noErrorOnMissing: true},
                     {from: "src/i18n/", to: "./dist/i18n/"},
-                    {from: "dist/kernel.js", to: "./dist/"},
                 ],
             }),
         );

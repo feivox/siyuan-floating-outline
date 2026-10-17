@@ -1,22 +1,204 @@
-.plugin-sample {
-  &__custom-tab {
-    background-color: var(--b3-theme-background);
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+:where(.fo2) {
+  /* 浮层尺寸与颜色集中定义，便于适配窗口和思源主题。 */
+  --fo2-rail-width: 18px;
+  --fo2-panel-width: min(300px, calc(100vw - 24px));
+  --fo2-panel-height: min(86vh, 620px, calc(100vh - 16px));
+  --fo2-row-height: clamp(28px, 4.2vh, 34px);
+  --fo2-label-color: #000;
+  --fo2-marker-color: var(--b3-theme-on-surface-lighter);
+  --fo2-current-marker-color: var(--b3-theme-primary);
+}
 
-  &__custom-dock {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+/* 收起时只显示标题短横，展开时显示完整的大纲卡片。 */
+.fo2 {
+  position: fixed;
+  z-index: 7;
+  box-sizing: border-box;
+  width: var(--fo2-rail-width);
+  max-width: var(--fo2-panel-width);
+  border-radius: 12px;
+  background: transparent;
+  transition: width 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
 
-  &__time {
-    background: var(--b3-card-info-background);
-    border-radius: 4px;
-    padding: 2px 8px;
+.fo2[hidden] {
+  display: none;
+}
+
+.fo2--open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: var(--fo2-panel-width);
+  background: #fff;
+  box-shadow:
+    var(--b3-point-shadow),
+    0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.fo2__viewport {
+  box-sizing: border-box;
+  grid-column: 1;
+  max-height: var(--fo2-panel-height);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: inherit;
+  scrollbar-width: none;
+}
+
+/* 使用自绘滑块，因此隐藏 Chromium 和 Firefox 的原生滚动条。 */
+.fo2__viewport::-webkit-scrollbar,
+.fo2__viewport::-webkit-scrollbar-button,
+.fo2__viewport::-webkit-scrollbar-track,
+.fo2__viewport::-webkit-scrollbar-thumb {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.fo2__list {
+  padding: 6px;
+}
+
+/* 每个标题行复用同一点击区域；层级缩进由数据深度控制。 */
+.fo2__row {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--fo2-row-height);
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fo2-label-color);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.fo2__row:focus-visible {
+  outline: 2px solid var(--b3-theme-primary);
+  outline-offset: -2px;
+}
+
+.fo2__label {
+  display: block;
+  box-sizing: border-box;
+  margin-right: 20px;
+  overflow: hidden;
+  padding-right: 8px;
+  padding-left: calc(12px + var(--fo2-depth, 0) * 14px);
+  font-size: clamp(12px, 0.95vw, 14px);
+  line-height: var(--fo2-row-height);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.fo2--open .fo2__label {
+  visibility: visible;
+  opacity: 1;
+}
+
+.fo2__marker {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 8px;
+  height: 3px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--fo2-marker-color);
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+/* 激活项用中性灰底和主题色竖线标出，不改变文字粗细。 */
+.fo2--open .fo2__row--current {
+  background: var(--b3-theme-surface-lighter);
+}
+
+.fo2--open .fo2__row--current::before {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--b3-theme-primary);
+  content: "";
+}
+
+.fo2__row:hover .fo2__marker,
+.fo2__row--current .fo2__marker {
+  width: 10px;
+  background: var(--fo2-current-marker-color);
+}
+
+.fo2__row--current .fo2__marker {
+  width: 12px;
+  border-radius: 999px;
+}
+
+.fo2--open .fo2__marker {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.fo2__scrolltrack {
+  display: none;
+  grid-column: 2;
+  position: relative;
+  align-self: stretch;
+  width: 6px;
+  margin: 8px auto;
+  border-radius: 3px;
+  background: transparent;
+  visibility: hidden;
+}
+
+.fo2--open .fo2__scrolltrack:not([hidden]) {
+  display: block;
+  visibility: visible;
+}
+
+.fo2--overflow.fo2--open {
+  grid-template-columns: minmax(0, 1fr) 6px;
+}
+
+.fo2__scrollthumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 3px;
+  min-height: 20px;
+  margin: 0 auto;
+  transform: translateY(0);
+  border-radius: 3px;
+  background: var(--b3-theme-on-surface-lighter);
+  cursor: grab;
+  touch-action: none;
+  transition: width 120ms ease;
+}
+
+/* 悬停时加宽可拖动滑块，轨道仍保持在右侧窄列内。 */
+.fo2__scrolltrack:hover .fo2__scrollthumb,
+.fo2__scrollthumb:active {
+  width: 6px;
+}
+
+.fo2__scrollthumb:active {
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fo2,
+  .fo2__label,
+  .fo2__marker,
+  .fo2__scrollthumb {
+    transition: none;
   }
 }
