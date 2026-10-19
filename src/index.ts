@@ -67,32 +67,56 @@ function headingSignature(elements: Map<string, HTMLElement>): string {
         .join("|");
 }
 
+function headingLevel(element: HTMLElement): number {
+    // data-subtype 形如 "h1".."h6"，解析为 1..6；无法识别时返回 0。
+    const match = /^h([1-6])$/.exec(element.dataset.subtype || "");
+    return match ? parseInt(match[1], 10) : 0;
+}
+
 function flattenOutline(
     paths: OutlinePath[] | undefined,
     elements: Map<string, HTMLElement>,
 ): OutlineEntry[] {
+    // 把整篇文档实际出现的标题级别排序后压缩成连续的缩进深度：
+    // 最浅标题顶格（depth 0），更深标题按相对顺序递增，跳级不留空洞。
+    const rank = new Map<number, number>();
+    const levels = new Set<number>();
+    elements.forEach((element) => {
+        const level = headingLevel(element);
+        if (level) {
+            levels.add(level);
+        }
+    });
+    Array.from(levels)
+        .sort((a, b) => a - b)
+        .forEach((level, index) => rank.set(level, index));
+
+    const depthOf = (element: HTMLElement): number => rank.get(headingLevel(element)) ?? 0;
+
     const entries: Omit<OutlineEntry, "text">[] = [];
-    // 接口返回嵌套大纲树；统一展开为文档顺序，供导航和层级缩进使用。
-    const appendBlock = (block: OutlineBlock, depth: number) => {
+    // 接口返回嵌套大纲树；统一展开为文档顺序，缩进由压缩后的级别决定。
+    const appendBlock = (block: OutlineBlock) => {
         if (!block) {
             return;
         }
         if (block.type === "NodeHeading" && elements.has(block.id)) {
-            entries.push({id: block.id, depth, element: elements.get(block.id)});
+            const element = elements.get(block.id);
+            entries.push({id: block.id, depth: depthOf(element), element});
         }
-        (block.children || []).forEach((child) => appendBlock(child, depth + 1));
+        (block.children || []).forEach(appendBlock);
     };
-    const appendPath = (path: OutlinePath, depth: number) => {
+    const appendPath = (path: OutlinePath) => {
         if (!path) {
             return;
         }
         if (path.nodeType === "NodeHeading" && elements.has(path.id)) {
-            entries.push({id: path.id, depth, element: elements.get(path.id)});
+            const element = elements.get(path.id);
+            entries.push({id: path.id, depth: depthOf(element), element});
         }
-        (path.blocks || []).forEach((block) => appendBlock(block, depth + 1));
-        (path.children || []).forEach((child) => appendPath(child, depth + 1));
+        (path.blocks || []).forEach(appendBlock);
+        (path.children || []).forEach(appendPath);
     };
-    (paths || []).forEach((path) => appendPath(path, 0));
+    (paths || []).forEach(appendPath);
     return entries.map((entry) => ({
         ...entry,
         text: readHeadingText(entry.element),
