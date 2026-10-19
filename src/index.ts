@@ -59,6 +59,14 @@ function indexHeadings(editor: IProtyle | null | undefined): Map<string, HTMLEle
     );
 }
 
+function headingSignature(elements: Map<string, HTMLElement>): string {
+    // 标题集合或级别（data-subtype）变化都会改变签名并触发层级重取；
+    // 纯文本变化不影响签名，走就地文本更新分支。
+    return Array.from(elements.entries())
+        .map(([id, element]) => `${id}:${element.dataset.subtype || ""}`)
+        .join("|");
+}
+
 function flattenOutline(
     paths: OutlinePath[] | undefined,
     elements: Map<string, HTMLElement>,
@@ -464,8 +472,7 @@ class EditorOutlineSession {
             return;
         }
         const liveElements = indexHeadings(this.editor);
-        const ids = Array.from(liveElements.keys());
-        const signature = ids.join("|");
+        const signature = headingSignature(liveElements);
         if (signature !== this.lastHeadingIDs) {
             // 标题集合变化时重新请求层级；只有文本变化时复用已有层级。
             this.reloadOutline();
@@ -489,7 +496,7 @@ class EditorOutlineSession {
             return;
         }
         const elements = indexHeadings(editor);
-        this.lastHeadingIDs = Array.from(elements.keys()).join("|");
+        this.lastHeadingIDs = headingSignature(elements);
         if (!elements.size) {
             this.entries = [];
             this.canvas.setEntries([]);
@@ -524,7 +531,7 @@ class EditorOutlineSession {
                     return;
                 }
                 const currentElements = indexHeadings(editor);
-                this.lastHeadingIDs = Array.from(currentElements.keys()).join("|");
+                this.lastHeadingIDs = headingSignature(currentElements);
                 this.entries = flattenOutline(response.data, currentElements);
                 this.canvas.setEntries(this.entries);
                 this.canvas.setCurrent(this.getCurrentHeadingID());
