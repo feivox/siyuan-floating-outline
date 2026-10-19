@@ -2,7 +2,7 @@
   "name": "siyuan-floating-outline",
   "author": "feivox",
   "url": "https://github.com/feivox/siyuan-floating-outline",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "3.8.5",
   "backends": [
     "windows",

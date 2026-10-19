@@ -1,6 +1,6 @@
 {
   "name": "siyuan-floating-outline",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A hover-expandable floating outline for the active SiYuan desktop editor",
   "main": "index.js",
   "scripts": {
